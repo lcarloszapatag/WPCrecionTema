@@ -1,0 +1,83 @@
+/*!
+Theme Name:Mi Tema version 1.3
+Theme URI:http://misitioweb.com
+Author:Manuel López
+Description:Estos son los comentarios escritos en style.css que se muestran en la descripción de nuestro sitio.
+ */
+
+html{
+
+    font-family: 'Roboto', sans-serif;
+    font-size: 16px;
+    background: black;
+    color: greenyellow;
+    box-sizing: border-box;
+    grid-gap: 2rem; /*Divide las zonas del grid*/
+}
+
+/*Reseteo universal de los estilos*/
+
+*,
+*:after,
+*:before{
+    box-sizing: inherit;
+    padding: 0;
+    margin: 0;
+}
+
+img{
+    max-width: 100%;
+    height: auto;
+}
+
+.header,
+.main,
+.footer{
+    border:thin solid greenyellow;
+    margin-bottom: 1rem;
+}
+/*Todos los hijos directos de main*/
+.main>*{
+    background-color: #CCCCCC;
+    padding: 1rem;
+    color:#222;
+}
+
+/*Módulo de GRID*/
+
+.main{
+    display: grid;
+    grid-template-columns:2fr 1fr;
+    grid-template-rows: repeat(2,auto);
+    grid-template-areas:'content sidebar'
+                        'other sidebar';
+
+}
+
+.content{
+    grid-area:content;
+}
+.content hr{
+    border:thick dotted greenyellow;
+    margin: 1rem;
+    width: 80%;
+}
+.sidebar{
+    grid-area:sidebar;
+}
+.other{
+    grid-area:other;
+}
+
+.widget,
+.pagination{
+    background: #AAA;
+    margin-bottom:2rem;
+    padding: 1rem;
+}
+
+.err404{
+    font-size: 5vw;
+    font-weight: bold;
+    text-align: center;
+}
