@@ -56,6 +56,12 @@ add_action('widgets_init', 'mawt_register_sidebars');
 
 if ( !function_exists( 'mawt_setup' ) ):
   function mawt_setup () {
+
+    //Función para traducciónes
+    // la funcion recibe el dominio del tema y la carpeta de lenguaje
+    load_theme_textdomain('mawt',get_template_directory() . '/languages');
+
+
     //Soporte para traducciones
       //https://developer.wordpress.org/themes/functionality/internationalization/
       //https://make.wordpress.org/polyglots/handbook/
@@ -87,4 +93,6 @@ require_once get_template_directory() . '/inc/customizer.php';
 require_once get_template_directory() . '/inc/custom-login.php';
 
 require_once get_template_directory() . '/inc/custom-admin.php';
+
+//Es importa que todos los arhivos php puros esten perfectamente cerrados pues nos daría problemas a la hora de usar las herramientas de traducción
 ?>
