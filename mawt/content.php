@@ -22,7 +22,7 @@
         <hr>
       <?php endwhile; else: ?>
         <p>El contenido solicitado no existe</p>
-      <?php endif;  wp_reset_postdata(); ?>
+      <?php endif; wp_reset_postdata(); ?>
     </article>
     <section class="Pagination  Other">
       <?php //previous_post_link(); ?>

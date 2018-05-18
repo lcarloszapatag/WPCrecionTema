@@ -30,6 +30,8 @@ if ( !function_exists( 'mawt_scripts' ) ):
     wp_enqueue_style( 'parent-style' );
     wp_enqueue_style( 'style' );
 
+//Todas las funciones que se encuentran en el tema padre se cargan tambien en el tema hijo. La única diferencia es que a nivel de jerarquia, las funciones del tema hijo tienen más peso
+
     wp_register_script( 'parent-scripts', get_template_directory_uri() . '/scripts.js', array('jquery'), '1.0.0', true );
     wp_register_script( 'scripts', get_stylesheet_directory_uri() . '/scripts.js', array('jquery', 'parent-scripts'), '1.0.0', true );
 
