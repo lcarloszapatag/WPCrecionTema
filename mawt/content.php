@@ -1,7 +1,6 @@
     <article class="Content">
       <?php
       //https://developer.wordpress.org/reference/functions/query_posts/
-      query_posts(null);
       if ( have_posts() ): while ( have_posts() ): the_post(); ?>
         <article>
           <?php the_post_thumbnail(); ?>
@@ -18,11 +17,37 @@
           <p>
             <?php the_author_posts_link(); ?>
           </p>
+          <div>
+            <h3>Custom Fields & Metaboxes</h3>
+            <?php the_meta(); ?>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'origen', true); ?>
+            </p>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'Actividad Física', true); ?>
+            </p>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'mb_origen_raza', true); ?>
+            </p>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'mb_esperanza_vida', true); ?>
+            </p>
+            <h3>ACF</h3>
+            <p>
+              <?php the_field('ideal_para'); ?>
+             </p>
+            <p>
+              <?php echo get_field('ideal_para'); ?>
+             </p>
+          </div>
         </article>
         <hr>
       <?php endwhile; else: ?>
         <p>El contenido solicitado no existe</p>
-      <?php endif; wp_reset_postdata(); ?>
+      <?php endif;
+        wp_reset_postdata();
+        wp_reset_query();
+       ?>
     </article>
     <section class="Pagination  Other">
       <?php //previous_post_link(); ?>

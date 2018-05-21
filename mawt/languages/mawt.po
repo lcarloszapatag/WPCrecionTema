@@ -10,9 +10,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Language: en\n"
 "X-Generator: Poedit 1.8.7.1\n"
-#Indentifica donde esta el texto
-#msgid -> Cadena de texto original
-#msgstr -> Cadena traducida
+
 #. Text in echo
 #: mawt/sidebar.php:8
 msgid "Buscar"
