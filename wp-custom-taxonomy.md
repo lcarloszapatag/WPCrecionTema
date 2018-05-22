@@ -36,6 +36,7 @@ Tiene etiquetas | No tiene etiquetas
 * [Custom Post Type UI](https://es.wordpress.org/plugins/custom-post-type-ui/)
 
 ```php
+<?
 function custom_post_type() {
   $labels = array(
     'name' => _x( 'Post Types', 'Post Type General Name', 'mawt' ),
@@ -98,6 +99,42 @@ function custom_post_type() {
 add_action( 'init', 'custom_post_type', 0 );
 ```
 
+Todos los custom post type que realicemos __no se mostrarán en el loop__ por defecto. Para que el loop lo muestre debemos de 
+realizar una pequeña modificación.
+
+1. Nos dirigimos a nuestro archivo __functions.php__ y cargamos un nuevo módulo que vamos a desarrollar. Le podemos dar el siguiente nombre;
+
+````php
+<?
+//...
+require_once get_template_directory() . '/inc/custom-pre-get-posts.php';
+//...
+````
+
+2. En ``./inc/`` creamos nuestro arhivo ``cusmtom-pre-get-post.php`` y añadimos el siguiente código
+
+````php
+<?
+if ( !function_exists( 'mawt_show_post_types_in_loop' ) ):
+  function mawt_show_post_types_in_loop ( $query ) {
+    // que no sea el admin y sea el query principal
+    if ( !is_admin() && $query->is_main_query() ):
+      $query->set( 'post_type', array( 'post', 'page', 'cuidados' ) );
+    endif;
+  }
+endif;
+
+add_action( 'pre_get_posts', 'mawt_show_post_types_in_loop' );
+````
+Cada vez que agreguemos nuevos tipos de post tenemos que actualizar nuestro módulo para irle agregando los nuevos custom post type que vayamos creando
+
+`$query->set( 'post_type', array( 'post', 'page', 'cuidados','otrocusmpost','otromas','...' ) );`
+
+3. En el __content.php__ (nuestro contenido principal en donde usamos el loop) tenemos que usar la función `wp_reset_query();` que lo que hace es limpiar la variable de la consulta. Evitamos provblemas de visualización.
+La función __wp_reset_query();__ se usa cuando usemos WP-Query. Pero es muy buena práctica usarla tb en donde hagamos loop principal (content.php).
+
+
+
 **[⬆ regresar al índice](#taxonomía-personalizada)**
 
 ## Custom Taxonomies
@@ -127,6 +164,7 @@ Primer método para agrupar contenido en WordPress | Segundo método para agrupa
 * [Custom Post Type UI](https://es.wordpress.org/plugins/custom-post-type-ui/)
 
 ```php
+<?
 function custom_taxonomy() {
   $labels = array(
     'name' => _x( 'Taxonomies', 'Taxonomy General Name', 'mawt' ),
@@ -181,7 +219,40 @@ Los metadatos se manejan en pares de clave/valor (Key/Value). La clave es el nom
 * [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/)
 * [CMB2](https://wordpress.org/plugins/cmb2/)
 
+
+Para mostrar los metadatos tenemos que poner en nuestro loop principal este código (a base de ejemplo práctico); 
+
+````html
+ <div>
+            <h3>Custom Fields & Metaboxes</h3>
+            <?php the_meta(); ?>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'origen', true); ?>
+            </p>
+            <p>
+              `
+            </p>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'mb_origen_raza', true); ?>
+            </p>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'mb_esperanza_vida', true); ?>
+            </p>
+            <h3>ACF</h3>
+            <p>
+              <?php the_field('ideal_para'); ?>
+             </p>
+            <p>
+              <?php echo get_field('ideal_para'); ?>
+             </p>
+          </div>
+````
+
+`<?php the_meta(); ?>` Se trae todos los metadatos que haymos incorporados por medio de los __custom field__. Si queremos prescindir de el par llave/valor tendremos que indicarlo de la siguiente manera `<?php echo get_post_meta( get_the_ID(), 'mb_origen_raza', true); ?>`
+Así, solo mostrará el valor.
+
 ```php
+<?
 the_meta();
 echo get_post_meta( get_the_ID(), 'a_key', true );
 ```
@@ -201,7 +272,16 @@ A diferencia de los campos personalizados no son nativos de WordPress por lo que
 * [Advanced Custom Fields](https://wordpress.org/plugins/advanced-custom-fields/)
 * [CMB2](https://wordpress.org/plugins/cmb2/)
 
+Si queremos que nuestros metaboxes se muestren en paginas y post debemos indicarlo por medio de un arreglo
+
 ```php
+<?
+  add_meta_box( 'metabox-id', __('Metabox Title', 'mawt'), 'callback_metaboxes', array('post','page'), 'normal', 'high', null );
+
+```
+
+```php
+<?
 function add_a_metaboxes () {
   //7 parametros:
     // id para identificar el metabox
@@ -211,6 +291,8 @@ function add_a_metaboxes () {
     // Contexto donde se mostrará (normal, aside, advanced)
     // Prioridad en la que se mostrará
     // Argumentos con callback
+    
+   
 
   add_meta_box( 'metabox-id', __('Metabox Title', 'mawt'), 'callback_metaboxes', 'post', 'normal', 'high', null );
 }

@@ -80,6 +80,9 @@ endif;
 
 add_action( 'after_setup_theme', 'mawt_setup' );
 
+//Para no complicar functions.php dividimos en módulos y los invocamos con require. De esta manera
+//el código de functions.php no se vuelve tan engorroso
+
 require_once get_template_directory() . '/inc/custom-header.php';
 
 require_once get_template_directory() . '/inc/customizer.php';
