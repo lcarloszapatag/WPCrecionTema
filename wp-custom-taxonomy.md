@@ -227,12 +227,14 @@ Para mostrar los metadatos tenemos que poner en nuestro loop principal este cód
             <h3>Custom Fields & Metaboxes</h3>
             <?php the_meta(); ?>
             <p>
+            <!-- Custom Fields -->
               <?php echo get_post_meta( get_the_ID(), 'origen', true); ?>
             </p>
             <p>
               `
             </p>
             <p>
+            <!-- Metaboxes -->
               <?php echo get_post_meta( get_the_ID(), 'mb_origen_raza', true); ?>
             </p>
             <p>
@@ -303,5 +305,100 @@ function callback_metaboxes () {
 
 add_action('add_meta_boxes', 'add_a_metaboxes');
 ```
+
+En WP-Generator metabox es de pago.  El uso de metabox requiere consultar la BBDD de la aplicación y ello conyeva mucho trabajo. 
+
+`wp_nonce_field( basename(__FILE__), 'mawt_nonce' );` Es una función de WP para crear un campo oculto que vamos a usar con posterioridad. __wp_nonce_field__ son funciones que generan campos de control cada 24h pero es un tema más de desarrollo de plugins. 
+Luego observamos que tenemos una tabla HTML para recoger la información. Es decir, tenemos que contruir nuestro formulario para recoger la información y luego
+también debemos de ejecutar una función que este pendiente que cuando salvamos nuestra publicación, recoga y guarde toda la información.
+
+`add_action('save_post', 'mawt_save_metaboxes', 10, 3);`
+
+Cuando salvamos la publicación esta función `mawt_save_metaboxes`  nos permite guardar toda la información recogida.
+
+` update_post_meta($post_id, 'mb_esperanza_vida', $mb_esperanza_vida );` Actualiza nuestra información.
+```php
+<?
+if ( !function_exists('mawt_metaboxes') ):
+  function mawt_metaboxes ( $post ) {
+    wp_nonce_field( basename(__FILE__), 'mawt_nonce' );
+?>
+    <table class="form-table">
+      <tr>
+          <th class="row-title" colspan="2">
+              <p>Añade la información de la raza</p>
+          </th>
+      </tr>
+      <tr>
+          <th class="row-title">
+              <label for="mb_origen_raza">Origen de la Raza:</label>
+          </th>
+          <td>
+              <input id="mb_origen_raza" name="mb_origen_raza" class="regular-text" type="text" value="<?php echo esc_attr( get_post_meta( $post->ID, 'mb_origen_raza', true ) ); ?>">
+          </td>
+      </tr>
+      <tr>
+          <th class="row-title">
+              <label for="mb_esperanza_vida">Esperanza de Vida:</label>
+          </th>
+          <td>
+            <?php $res_esperanza = esc_html( get_post_meta( $post->ID, 'mb_esperanza_vida', true ) );  ?>
+            <select name="mb_esperanza_vida" id="mb_esperanza_vida" class="post-box">
+              <option value="" selected>- - -</option>
+              <option <?php selected($res_esperanza, '8-10'); ?> value="8 a 10 años">8 a 10 años</option>
+              <option <?php selected($res_esperanza, '10-12'); ?> value="10 a 12 años">10 a 12 años</option>
+              <option <?php selected($res_esperanza, '12-14'); ?> value="12 a 14 años">12 a 14 años</option>
+              <option <?php selected($res_esperanza, '15-20'); ?> value="15 a 20 años">15 a 20 años</option>
+            </select>
+          </td>
+      </tr>
+    </table>
+<?php
+  }
+endif;
+
+if ( !function_exists( 'mawt_save_metaboxes' ) ):
+  function mawt_save_metaboxes( $post_id, $post, $update ) {
+    if ( !isset( $_POST[ 'mawt_nonce' ] ) || !wp_verify_nonce( $_POST[ 'mawt_nonce' ], basename( __FILE__ ) ) )
+      return $post_id;
+
+    if ( !current_user_can( 'edit_post', $post_id ) )
+      return $post_id;
+
+    if( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
+      return $post_id;
+
+    $mb_origen_raza = $mb_esperanza_vida = '';
+
+    if( isset( $_POST['mb_origen_raza'] ) ) {
+      $mb_origen_raza = sanitize_text_field( $_POST['mb_origen_raza'] );
+    }
+
+    update_post_meta($post_id, 'mb_origen_raza', $mb_origen_raza );
+
+    if( isset( $_POST['mb_esperanza_vida'] ) ) {
+      $mb_esperanza_vida = sanitize_text_field( $_POST['mb_esperanza_vida'] );
+    }
+
+    update_post_meta($post_id, 'mb_esperanza_vida', $mb_esperanza_vida );
+  }
+endif;
+
+add_action('save_post', 'mawt_save_metaboxes', 10, 3);
+?>
+```
+
+Para imprimir los metaboxes en content.php
+
+````html
+ <!-- Metaboxes -->
+              <?php echo get_post_meta( get_the_ID(), 'mb_origen_raza', true); ?>
+            </p>
+            <p>
+              <?php echo get_post_meta( get_the_ID(), 'mb_esperanza_vida', true); ?>
+            </p>
+<!-- ... -->
+````
+__Los metaboxes si cambiamos de tema se pierden, en cambio, los cusmtom field se mantienen aunque cambiemos de tema__
 
 **[⬆ regresar al índice](#taxonomía-personalizada)**
