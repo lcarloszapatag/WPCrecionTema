@@ -1,5 +1,6 @@
 # Creación de temas en Wordpress IV
-## Planificación del tema
+## 1. Planificación del tema
+
 ### Estructura básica de nuestra plantilla
 
 Iniciamos nuestro proyecto de tema. Para ello creamos nuestra carpeta (nombredeltema) y se va a llamar __EDTheme__.
@@ -374,8 +375,729 @@ gulp.task('default', ['server', 'css', 'js'], () => {
   gulp.watch('./js/**/*.js', ['js'])
 })
 ````
+## 2. Integración de funciones
+
+### Variable global google fonts
+
+Vamos a dar de alta otra hoja de estilos que va a ser la de __google fonts__ Para ello en __funtions.php__ vamos a declarar __variables globales__ `global $google_fonts;`.
+
+````php
+<?
+/**
+ * My Awesome WordPress Theme functions and definitions
+ *
+ * @link https://developer.wordpress.org/themes/basics/theme-functions/
+ *
+ * @package WordPress
+ * @subpackage mawt
+ * @since 1.0.0
+ * @version 1.0.0
+ */
+
+global $google_fonts;
+````
+
+En la función para inyectar la hoja de estilos tambien tenemos que invocar google_fonts para que la función la reconozca
+
+````php
+<?
+  function mawt_scripts () {
+    //Invcamos $google_fonts de nuevo para que la función la reconozoca
+    global $google_fonts;
+ 
+    wp_enqueue_style( 'google-fonts', $google_fonts, array(), '1.0.0', 'all' );
+    }
+````
+
+Ahora solo queda usarla en __wp_enqueue_style__ `wp_enqueue_style( 'google-fonts', $google_fonts, array(), '1.0.0', 'all' );`
+
+
+## Creación e invocación de menus y widgets
+
+#### Menus
+
+Los menus se inicia en la acción `add_action( 'init', 'mawt_menus' );`.
+Estamos dando de alta el `Menú principal` y el `Menú Redes Sociales`. Posteriormente en el dashboard lo ubicamos en el lugar correspondiente de nuestro tema.
+
+
+````php
+<?
+function mawt_menus () {
+  register_nav_menus(array(
+    'main_menu' => __('Menú Principal', 'mawt'),
+    'social_menu' => __('Menú Redes Sociales', 'mawt')
+  ));
+}
+
+add_action( 'init', 'mawt_menus' );
+````
+Para activarlo y que se muestre de manera dinámica nos vamos a __header.php__.
+
+```html
+ <section class="Panel">
+          <?php
+            if ( has_nav_menu( 'main_menu' ) ):
+              wp_nav_menu( array(
+                'theme_location' => 'main_menu',
+                'container' => 'nav',
+                'container_class' => 'Menu'
+              ) );
+            else:
+          ?>
+              <nav class="Menu">
+                <ul>
+                  <?php wp_list_pages('title_li'); ?>
+                </ul>
+              </nav>
+          <?php endif; ?>
+        </section>
+```
++ wp_nav_menu() función que usamos para mostrar el menú
++ 'theme_location' => 'main_menu', Es el menú principal.
++ La etiqueta contenedora del menu va a ser un __nav__ `'container' => 'nav',`
++ Y va a tener la clase __Menu__ `'container_class' => 'Menu'`
+
+
+````php
+<?
+wp_nav_menu( array(
+                'theme_location' => 'main_menu',
+                'container' => 'nav',
+                'container_class' => 'Menu'
+              ) );
+
+````
+
+Si se da el caso contrario es decir, no menú, muestra una lista de las páginas disponibles.
+
+````html
+ <nav class="Menu">
+                <ul>
+                  <?php wp_list_pages('title_li'); ?>
+                </ul>
+              </nav>
+````
+
+Luego en __footer.php__ mostramos nuestro menu social.
+
++ 'link_before' => '<span class="sr-text">','link_after' => '</span>', Span que envuelve antes y despues del menú. __sr-text__ es la clase que nos va a permitir mostrar los iconos social media.
+
+Este link before y after también está para hacer más accesible (a las personas ciegas) nuestra página. Con la clase sr-text vamos a permitir que este tipo de usuarios sepan en donde se encuentran dentro de nuestra página.
+
+
+````php
+<?
+ if ( has_nav_menu( 'social_menu' ) ):
+            wp_nav_menu(array(
+              'theme_location' => 'social_menu',
+              'container' => 'nav',
+              'container_class' => 'SocialMedia',
+              'link_before' => '<span class="sr-text">',
+              'link_after' => '</span>'
+            ));
+          endif;
+````
 
 
 
+#### Widgets
+
+Los widgets se inician en `add_action('widgets_init', 'mawt_register_sidebars');`.
+
++ 'name' => __('Sidebar principal', 'mawt') , Nombre del __sidebar__ `Sidebar principal` con las funciones para las traducciónes `'mawt'.
++ 'id' => 'main_sidebar', El __id__ del sidebar.
++ 'description' => __('Este es el sidebar principal', 'mawt'), La descripción con soporte para traducción.
++ 'before_widget' => '<article id="%1$s" class="Widget  %2$s">', Lo que va antes del Widgets __con el id y la clase widget__.
++ 'after_widget' => '</article>', Que va a ir despues.
++ 'before_title' => '<h3>', va antes del título.
++ 'after_title' => '</h3>', y lo que va despues.
 
 
+````php
+<?
+function mawt_register_sidebars () {
+  register_sidebar(array(
+    'name' => __('Sidebar principal', 'mawt') ,
+    'id' => 'main_sidebar',
+    'description' => __('Este es el sidebar principal', 'mawt'),
+    'before_widget' => '<article id="%1$s" class="Widget  %2$s">',
+    'after_widget' => '</article>',
+    'before_title' => '<h3>',
+    'after_title' => '</h3>',
+  ));
+}
+
+add_action('widgets_init', 'mawt_register_sidebars');
+
+````
+
+Los cambios los vamos a ver en nuestro __dashboard__. Podemos obsevar que aparece el menu __widgets__ y el __Sidebar Principal__ en donde podemos poner todos los widgets como por ejemplo calendario, busqueda...etc.
+
+
+## Creación e invocación de widgets
+
+En nuestro __sidebar.php__ vamos a invocar los widget y vamos a hacerlo mediante una comprobación. Si está activo nuestro sidebar mostramos los widgets correspondientes dentro de nuestro sidebar, sino __mostramos un formulario de busqueda__ `get_search_form( );`
+
+````html
+<aside class="Sidebar">
+    <?php
+    if (is_active_sidebar( 'main_sidebar' )):
+        dynamic_sidebar( 'main_sidebar' );
+    else:
+        ?>
+        <article class="Widget">
+            <h3><?php _e('Buscar', 'mawt'); ?></h3>
+            <?php get_search_form( ); ?>
+        </article>
+    <?php
+    endif;
+    ?>
+</aside>
+````
+
+## Configuración de soporte
+
+En __functions.php__ damos soporte a nuestro tema mediante la función __function mawt_setup ()__
+
++ __load_theme_textdomain( 'mawt', get_template_directory() . '/languages' );__ Soporte para los idiomas.
++ __add_theme_support( 'post-thumbnails' );__ Para os thumbnails
++ __add_theme_support('html5',array(...))__ Soporte para html5
+    + comment-list
+    + comment-form
+    + search-form
+    + gallery
+    + caption
+    
+El archivo php que da soporte a las entradas es el __single.php__ WP nos ofrece unos 9 tipos de formatos, entrada estandar, galeria de imágenes...etc. Nosotros podemos validar en nuestro __single.php__ que tipo de entrada se trata y según el tipo podemos cambiar la maquetación.
+Al añadir en nuestro __funtions.php__ el sorpote para entradas `add_theme_support('post-formats'...` veremos los formatos disponibles para cada entrada.
+
++ __add_theme_support( 'title-tag' );__ WP tiene una función que dependiendo en donde nos encontremos podemos poner diferentes títulos. Ya no usaremos wp_title y eliminamos la etiqueta __title__ de nuestro header
+
++ __add_theme_support( 'automatic-feed-links' );__ los feed de RSS
++ __remove_action('wp_head', 'wp_generator');__ eliminamos etiquetas meta que mete WP. wp_generator muestra en el código HTML la versión de WP, no es buena idea mostrar
+
+Y el resto ya es a consideración;
+
+````php
+//Imprime sugerencias de recursos para los navegadores para precargar, pre-renderizar y pre-conectarse a sitios web
+  remove_action('wp_head', 'wp_resource_hints', 2);
+  //Muestre el enlace al punto final del servicio Really Simple Discovery
+  remove_action('wp_head', 'rsd_link');
+  //Muestre el enlace al archivo de manifiesto de Windows Live Writer
+  remove_action('wp_head', 'wlwmanifest_link');
+  //Inyecta rel = shortlink en el encabezado si se define un shortlink para la página actual.
+  remove_action('wp_head', 'wp_shortlink_wp_head');
+
+  //Quitar scripts para soporte a emojis
+  //remove_action('wp_print_styles', 'print_emoji_styles');
+  //remove_action('wp_head', 'print_emoji_detection_script', 7);
+
+  //Quitar la barra de administración en el Frontend
+  add_filter('show_admin_bar', '__return_false');
+````
+
+````php
+<?
+function mawt_setup () {
+  load_theme_textdomain( 'mawt', get_template_directory() . '/languages' );
+
+  add_theme_support( 'post-thumbnails' );
+
+    add_theme_support('html5', array(
+    'comment-list',
+    'comment-form',
+    'search-form',
+    'gallery',
+    'caption'
+  ));
+
+  //https://codex.wordpress.org/Post_Formats
+  add_theme_support('post-formats',  array (
+    'aside',
+    'gallery',
+    'link',
+    'image',
+    'quote',
+    'status',
+    'video',
+    'audio',
+    'chat'
+  ) );
+
+  //Permite que los themes y plugins administren el título, si se activa, no debe usarse wp_title()
+  add_theme_support( 'title-tag' );
+
+  //Activar Feeds RSS
+  add_theme_support( 'automatic-feed-links' );
+
+  //Ocultar Tags innecesarios del head
+  //Versión de WordPress
+  remove_action('wp_head', 'wp_generator');
+
+  //Imprime sugerencias de recursos para los navegadores para precargar, pre-renderizar y pre-conectarse a sitios web
+  remove_action('wp_head', 'wp_resource_hints', 2);
+  //Muestre el enlace al punto final del servicio Really Simple Discovery
+  remove_action('wp_head', 'rsd_link');
+  //Muestre el enlace al archivo de manifiesto de Windows Live Writer
+  remove_action('wp_head', 'wlwmanifest_link');
+  //Inyecta rel = shortlink en el encabezado si se define un shortlink para la página actual.
+  remove_action('wp_head', 'wp_shortlink_wp_head');
+
+  //Quitar scripts para soporte a emojis
+  //remove_action('wp_print_styles', 'print_emoji_styles');
+  //remove_action('wp_head', 'print_emoji_detection_script', 7);
+
+  //Quitar la barra de administración en el Frontend
+  add_filter('show_admin_bar', '__return_false');
+}
+
+add_action('after_setup_theme', 'mawt_setup');
+````
+
+## Imprimiendo contenido básico
+
+El loop `if (have_posts()): while (have_posts()): the_post();` Si hay post mientras haya post imprime post.
+En este punto podemos empezar a plantear el diseño. Para ello modularizamos y creamos las plantillas que encapsulen el contenido.
+
+__content.php__
+
+Creamos las plantillas relacionadas:
+
++ get_template_part( 'template-parts/content-main' )
++ get_template_part( 'template-parts/content-none' )
++ get_template_part( 'template-parts/pagination' );
++ get_sidebar();
+
+````html
+<div class="Content-container">
+  <main class="Main">
+  <?php
+    if (have_posts()): while (have_posts()): the_post();
+      get_template_part( 'template-parts/content-main' );
+    endwhile; else:
+      get_template_part( 'template-parts/content-none' );
+    endif;
+  ?>
+  </main>
+  <?php
+  get_template_part( 'template-parts/pagination' );
+  get_sidebar();
+  ?>
+</div>
+````
+__content-main.php__
+
+```php
+<figure class="PostCard">
+  <?php the_post_thumbnail(); ?>
+  <figcaption>
+    <h2>
+      <a href="<?php the_permalink(); ?>"><?php the_title( ); ?></a>
+    </h2>
+    <?php the_excerpt(); ?>
+    <?php get_template_part( 'template-parts/content-single' ); ?>
+  </figcaption>
+</figure>
+```
+
+__content-none.php__
+
+````php
+<article class="NotFound">
+  <h2><?php _e('Contenido inexistente', 'mawt'); ?></h2>
+  <p>
+    <?php _e('Realiza una búsqueda para encontrar lo que deseas.', 'mawt'); ?>
+  </p>
+  <?php get_search_form(); ?>
+</article>
+````
+
+Archivo de paginación. Vamos a crear una comprobación de que si existen páginas anteriores o posteriores ejecute el código.
+
++ __get_next_post_link() || get_preview_post_link( )__ Si existen link para páginas siguientes o previas nos muestre la paginación.
+
+__pagination.php__
+
+````php
+<?php if ( get_next_post_link() || get_preview_post_link( ) ): ?>
+  <div class="Pagination">
+    <nav>
+      <?php
+        //https://codex.wordpress.org/Pagination
+        echo paginate_links( array(
+          'prev_text' => __('<span>&laquo; Anteriores</span>', 'mawt'),
+          'next_text' => __('<span>Siguientes &raquo;</span>', 'mawt')
+        ) );
+      ?>
+    </nav>
+  </div>
+<?php endif; ?>
+````
+
+## Soporte a plantillas para páginas
+
+__page.php__
+
+````php
+<?php get_header(); ?>
+<div class="Content-container Page">
+  <main class="Main">
+    <?php while ( have_posts() ) : the_post(); ?>
+      <section class="PostContent">
+        <article><?php the_content(); ?></article>
+      </section>
+    <?php endwhile; ?>
+  </main>
+  <?php  get_sidebar(); ?>
+</div>
+<?php  get_footer(); ?>
+````
+
+Vamos a crear plantillas para las páginas __page-full-width.php__ y __page-sidebar-left.php__
+Para que WP las reconozca como plantillas de páginas tenemos que poner un comentario especial al principio del archivo 
+
++ __/*Template name: Nombre de la plantilla*/__  El nombre que le demos aparecerá en nuestro dashboard a la hora de crear páginas.
+
+
+__page-full-width.php__
+
+```php
+<?php
+/* Template name: Página sin sidebar */
+get_header(); ?>
+<div class="Content-container Page FullWidth">
+  <main class="Main">
+    <?php while ( have_posts() ) : the_post(); ?>
+      <section class="PostContent">
+        <article><?php the_content(); ?></article>
+      </section>
+    <?php endwhile; ?>
+  </main>
+</div>
+<?php  get_footer(); ?>
+```
+
+__page-sidebar-left.php__
+
+````php
+<?php
+/* Template name: Página con sidebar a la izquierda */
+get_header(); ?>
+<div class="Content-container Page Sidebar-left">
+  <?php  get_sidebar(); ?>
+  <main class="Main">
+    <?php while ( have_posts() ) : the_post(); ?>
+      <section class="PostContent">
+        <article><?php the_content(); ?></article>
+      </section>
+    <?php endwhile; ?>
+  </main>
+</div>
+<?php  get_footer(); ?>
+````
+
+## Plantilla de entrada
+
+__single.php__
+
+Como en __content.php__ vamos a modularizar el contenido para crear la maqueta
+
+````php
+<?php get_header(); ?>
+<div class="Content-container">
+  <main class="Main">
+    <?php while ( have_posts() ) : the_post(); ?>
+      <section class="PostContent">
+        <article><?php the_content(); ?></article>
+        <h3><?php _e('Información de la Pubicación', 'mawt'); ?></h3>
+        <?php get_template_part( 'template-parts/content-single' ); ?>
+      </section>
+    <?php endwhile; ?>
+  </main>
+  <?php
+    comments_template();
+    get_sidebar();
+  ?>
+</div>
+<?php get_footer(); ?>
+````
+
+__content-single.php__
+
+````php
+<p>
+  <small>
+    <i class="fas fa-calendar"></i>
+    <?php the_time( get_option('date_format') ); ?>
+    &bull;
+    <i class="fas fa-user-circle"></i>
+    <?php the_author_posts_link(); ?>
+  </small>
+</p>
+<p>
+  <i class="fas fa-tags"></i>
+  <?php _e('Categorías: ', 'mawt'); the_category(', '); ?>
+</p>
+<p>
+  <i class="fas fa-hashtag"></i>
+  <?php the_tags(); ?>
+</p>
+<p>
+  <i class="fab fa-wpforms"></i>
+  <?php _e('Formato de Entrada: ', 'mawt'); echo ( get_post_format( $post ) ) ? get_post_format( $post ) : 'standard'; ?>
+</p>
+````
+
+__comments_template();__ 
+
+Hace referencia a __comments.php__ Vamos a realizar una validación. Si no hay comentarios solo muestra un mensaje con soporte para traducción. Pero según el número de comentarios mostramos mensajes diferentes
+
+ + Si solo hay un comentario o si hay __%__ comentarios (% -> Número de comentarios)
+ 
+ ````php
+ <?
+     comments_number(
+          __('No hay comentarios aún', 'mawt'),
+          __('Hay un comentario publicado', 'mawt'),
+          __('Hay % comentarios', 'mawt')
+        );
+````
+
+Luego en una __<ol>__ imprimimos los comentarios
+
+````html
+ <ol class="commentlist">
+      <?php wp_list_comments(); ?>
+    </ol>
+````
+
+````php
+<aside class="Comments">
+  <?php if ( have_comments() ): ?>
+    <h3>
+      <?php
+        comments_number(
+          __('No hay comentarios aún', 'mawt'),
+          __('Hay un comentario publicado', 'mawt'),
+          __('Hay % comentarios', 'mawt')
+        );
+      ?>
+    </h3>
+    <ol class="commentlist">
+      <?php wp_list_comments(); ?>
+    </ol>
+  <?php endif; ?>
+  <?php comment_form(); ?>
+</aside>
+````
+
+## Plantilla de busqueda
+
+__search.php__
+
+````php
+<?php get_header(); ?>
+<div class="Content-container">
+  <main class="Main">
+    <div class="Search-results">
+      <h3><?php  _e( 'Resultados para la búsqueda:', 'mawt' ); ?></h3>
+      <mark><?php echo get_search_query(); ?></mark>
+    </div>
+    <?php
+      if ( have_posts() ): while ( have_posts() ): the_post();
+        get_template_part( 'template-parts/content-search' );
+      endwhile; else:
+        get_template_part( 'template-parts/content-none' );
+      endif;
+    ?>
+  </main>
+  <?php
+    get_template_part( 'template-parts/pagination' );
+    get_sidebar();
+  ?>
+</div>
+<?php get_footer(); ?>
+````
+
+__content-search.php__
+
+````html
+<figure class="PostCard">
+  <?php the_post_thumbnail(); ?>
+  <figcaption>
+    <h2>
+      <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+    </h2>
+    <?php the_excerpt(); ?>
+  </figcaption>
+</figure>
+````
+
+Pero que ocurre cuando el usuario __busca por categorias, autor, etiquetas...__ Para ello tenemos la plantilla del sistema __archive.php__
+
+__archive.php__
+
+Aqui preguntamos si es categoria, si es etiqueta;
+
++ is_category();
++ is_tag();
+
+__single_term_title();__ nos devuelve el termino de busqueda independientemente si es categoria o etiqueta.
+
+
+Y por último mostramos los resultados
+
+````html
+<?php
+      if ( have_posts() ): while ( have_posts() ): the_post();
+        get_template_part( 'template-parts/content-main' );
+      endwhile; else:
+        get_template_part( 'template-parts/content-none' );
+      endif;
+    ?>
+  </main>
+  <?php
+    get_template_part( 'template-parts/pagination' );
+    get_sidebar();
+  ?>
+````
+
+Si no hay resultado mostramos `get_template_part( 'template-parts/content-none' );`
+
+````html
+<?php get_header(); ?>
+<div class="Content-container">
+  <main class="Main">
+    <?php
+      if ( is_category() ):
+        $term_title = __('Resultados para la categoría:', 'mawt');
+      endif;
+
+      if ( is_tag() ):
+        $term_title = __('Resultados para la etiqueta:', 'mawt');
+      endif;
+    ?>
+    <div class="TermsResults">
+      <h3><?php echo $term_title; ?></h3>
+      <mark><?php single_term_title(); ?></mark>
+    <div>
+    <?php
+      if ( have_posts() ): while ( have_posts() ): the_post();
+        get_template_part( 'template-parts/content-main' );
+      endwhile; else:
+        get_template_part( 'template-parts/content-none' );
+      endif;
+    ?>
+  </main>
+  <?php
+    get_template_part( 'template-parts/pagination' );
+    get_sidebar();
+  ?>
+</div>
+<?php get_footer(); ?>
+````
+
+## Plantilla autor y error404
+
+__404.php__
+
+__<div class="Content-container Page FullWidth">__ mostramos la página a tamaño completo.
+
+````html
+<?php get_header(); ?>
+<div class="Content-container Page FullWidth">
+  <main class="Main">
+    <?php get_template_part( 'template-parts/content-none' ); ?>
+  </main>
+</div>
+<?php get_footer(); ?>
+````
+
+
+__author.php__
+
+LLamamos a __get_template_part( 'template-parts/content-author' );__
+
+````html
+<?php get_header(); ?>
+<div class="Content-container">
+  <main class="Main">
+    <?php
+      get_template_part( 'template-parts/content-author' );
+      if ( have_posts() ): while ( have_posts() ): the_post();
+        get_template_part( 'template-parts/content-search' );
+      endwhile; else:
+        get_template_part( 'template-parts/content-none' );
+      endif;
+    ?>
+  </main>
+  <?php
+    get_template_part( 'template-parts/pagination' );
+    get_sidebar();
+  ?>
+</div>
+<?php get_footer(); ?>
+````
+
+__get_template_part( 'template-parts/pagination' );__ ¿Porqué llamamos a la paginación? Por que vamos a mostrar las entradas del autor.
+
+Plantilla del autor
+
+__content-author.php__
+
+````html
+<aside class="Author">
+  <h3><?php _e('Información del Autor:', 'mawt'); ?></h3>
+  <div class="Author-info">
+    <figure>
+      <?php echo get_avatar( get_the_author_id(), 500 ); ?>
+    </figure>
+    <ul>
+      <li>
+        <i class="fas fa-user-circle"></i>
+        <?php the_author(); ?>
+      </li>
+      <li>
+        <i class="fas fa-male"></i>
+        <?php echo get_the_author_meta('first_name') . ' ' . get_the_author_meta('last_name'); ?>
+      </li>
+      <li>
+        <i class="fas fa-envelope"></i>
+        <?php echo get_the_author_meta('user_email'); ?>
+      </li>
+      <li>
+        <i class="fas fa-sitemap"></i>
+        <a href="<?php echo get_the_author_meta('user_url'); ?>" target="_blank">
+          <?php echo get_the_author_meta('user_url'); ?>
+        </a>
+      </li>
+      <li>
+        <i class="fas fa-calendar"></i>
+        <?php echo get_the_author_meta('user_registered'); ?>
+      </li>
+      <li>
+        <i class="fas fa-key"></i>
+        <?php echo get_the_author_meta('roles')[0]; ?>
+      </li>
+      <li>
+        <i class="fas fa-address-book"></i>
+        <?php echo get_the_author_meta('description'); ?>
+      </li>
+      <li>
+        <?php echo get_the_author_posts(); ?>
+        <i class="fas fa-newspaper"></i>
+      </li>
+      <li>
+        <a href="<?php echo get_the_author_meta('facebook'); ?>" target="_blank">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+      <li>
+        <a href="<?php echo get_the_author_meta('twitter'); ?>" target="_blank">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+</aside>
+````
