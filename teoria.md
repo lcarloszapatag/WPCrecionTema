@@ -1,7 +1,7 @@
 # Creación de temas en Wordpress IV
 ## 1. Planificación del tema
 
-### Estructura básica de nuestra plantilla
+### 1.1 Estructura básica de nuestra plantilla
 
 Iniciamos nuestro proyecto de tema. Para ello creamos nuestra carpeta (nombredeltema) y se va a llamar __EDTheme__.
 Para comenzar cualquier proyecto theme necesitamos 4 archivos básicos:
@@ -13,8 +13,7 @@ Para comenzar cualquier proyecto theme necesitamos 4 archivos básicos:
 
 En __index.php__ podemos "pegar" una plantilla HTML para hacernos una idea de la maquetación definitiva. Esta puede ir en HTML para identificar los elementos que va a  manejar nuestra plantilla.
 
-
-### Volviendo dinámica la plantilla con PHP
+### 1.2 Volviendo dinámica la plantilla con PHP
 
 Ahora vamos a "volver dinámica" nuestra plantilla principal __index.php__ e ir troceandola en diferentes módulos.
 
@@ -46,7 +45,7 @@ Podemos usar esas clases o incluir las nuestras mediante un arreglo que le pasam
 
 En el __footer__ `<?php echo date('Y') . __(' Derechos Reservados', 'mawt'); ?>` Fecha dínamica que la coge de nuestro servidor.
 
-### Estructura de carpetas y archivos
+### 1.3 Estructura de carpetas y archivos
 
 Estructura de carpertas:
 
@@ -70,7 +69,7 @@ Archivos básicos:
 + script.js similar al style.css pero para códigos javascript
 + header.php, footer.php, sidebar.php y el no oficial content.php, todos ellos para mostrar el contenido de las diferentes partes de nuestra site
 
-### Definiendo zonas comunes
+### 1.4 Definiendo zonas comunes
 
 __index.php__
 
@@ -186,7 +185,7 @@ __sidebar.php__
 </aside>
 ````
 
-### Automatizar las tareas de desarrollo
+### 1.5 Automatizar las tareas de desarrollo
 
 + babel.rc módulos de script 6
 + gulpfile.js automatizador de tareas
@@ -285,7 +284,7 @@ endif;
 add_action('wp_enqueue_scripts', 'mawt_scripts');
 ````
 
-### Archivo gulpfile.babel.js
+### 1.6 Archivo gulpfile.babel.js
 
 Gulp
 
@@ -375,9 +374,10 @@ gulp.task('default', ['server', 'css', 'js'], () => {
   gulp.watch('./js/**/*.js', ['js'])
 })
 ````
+
 ## 2. Integración de funciones
 
-### Variable global google fonts
+### 2.1 Variable global google fonts
 
 Vamos a dar de alta otra hoja de estilos que va a ser la de __google fonts__ Para ello en __funtions.php__ vamos a declarar __variables globales__ `global $google_fonts;`.
 
@@ -411,8 +411,7 @@ En la función para inyectar la hoja de estilos tambien tenemos que invocar goog
 
 Ahora solo queda usarla en __wp_enqueue_style__ `wp_enqueue_style( 'google-fonts', $google_fonts, array(), '1.0.0', 'all' );`
 
-
-## Creación e invocación de menus y widgets
+### 2.2 Creación e invocación de menus y widgets
 
 #### Menus
 
@@ -533,8 +532,7 @@ add_action('widgets_init', 'mawt_register_sidebars');
 
 Los cambios los vamos a ver en nuestro __dashboard__. Podemos obsevar que aparece el menu __widgets__ y el __Sidebar Principal__ en donde podemos poner todos los widgets como por ejemplo calendario, busqueda...etc.
 
-
-## Creación e invocación de widgets
+### 2.3 Creación e invocación de widgets
 
 En nuestro __sidebar.php__ vamos a invocar los widget y vamos a hacerlo mediante una comprobación. Si está activo nuestro sidebar mostramos los widgets correspondientes dentro de nuestro sidebar, sino __mostramos un formulario de busqueda__ `get_search_form( );`
 
@@ -555,7 +553,7 @@ En nuestro __sidebar.php__ vamos a invocar los widget y vamos a hacerlo mediante
 </aside>
 ````
 
-## Configuración de soporte
+### 2.4 Configuración de soporte
 
 En __functions.php__ damos soporte a nuestro tema mediante la función __function mawt_setup ()__
 
@@ -654,7 +652,7 @@ function mawt_setup () {
 add_action('after_setup_theme', 'mawt_setup');
 ````
 
-## Imprimiendo contenido básico
+### 2.5 Imprimiendo contenido básico
 
 El loop `if (have_posts()): while (have_posts()): the_post();` Si hay post mientras haya post imprime post.
 En este punto podemos empezar a plantear el diseño. Para ello modularizamos y creamos las plantillas que encapsulen el contenido.
@@ -734,7 +732,7 @@ __pagination.php__
 <?php endif; ?>
 ````
 
-## Soporte a plantillas para páginas
+### 2.6 Soporte a plantillas para páginas
 
 __page.php__
 
@@ -796,7 +794,7 @@ get_header(); ?>
 <?php  get_footer(); ?>
 ````
 
-## Plantilla de entrada
+### 2.7 Plantilla de entrada
 
 __single.php__
 
@@ -891,7 +889,7 @@ Luego en una __<ol>__ imprimimos los comentarios
 </aside>
 ````
 
-## Plantilla de busqueda
+### 2.8 Plantilla de busqueda
 
 __search.php__
 
@@ -997,7 +995,7 @@ Si no hay resultado mostramos `get_template_part( 'template-parts/content-none' 
 <?php get_footer(); ?>
 ````
 
-## Plantilla autor y error404
+### 2.9 Plantilla autor y error404
 
 __404.php__
 
@@ -1101,3 +1099,331 @@ __content-author.php__
   </div>
 </aside>
 ````
+
+## 3. Integración de funciones avanzadas
+
+### 3.1 Cabecera personalizable y logo
+
+Todas las funcionalidades van a ir en nuestra carpeta __inc__.
+
++ __custom-admin.php__, este archivo nos va a servir para las modificaciones que vamos a realizar en el dashboard.
++ __custom-descrition.php__, meta información sobre el site.
++ __custom-excerpt.php__, para gestionar el texto del extracto de cada post.
++ __custom-login.php__, acceso al admin de nuestro WP.
++ __custom-header.php__, cabecera personalizable.
++ __customizer.php__, personalización del theme.
+
+Ahora los damos de alta en nuestro __functions.php__
+
+````php
+
+require_once get_template_directory() . '/inc/custom-header.php';
+
+require_once get_template_directory() . '/inc/customizer.php';
+
+require_once get_template_directory() . '/inc/custom-excerpt.php';
+
+require_once get_template_directory() . '/inc/custom-description.php';
+
+require_once get_template_directory() . '/inc/custom-login.php';
+
+require_once get_template_directory() . '/inc/custom-admin.php';
+
+````
+
+### 3.2 Cabecera personalizable y logo
+
+__custom-header.php__
+
+Esta función se va a ejecutar en el `after_setup_theme` 
+
+Vamos a configurar el logo. Para ello podemos activar la capacidad para que el usuario cambie el logo.
+
++ `'add_theme_support( 'custom-logo', array (...)'`, Para activar la customización
++ 'height' => 100, 'width' => 100, Alto y ancho del logo
++ 'flex-height' => true ...etc Para que el usuario lo pueda adaptar en el dashboard.
+
+```php
+function mawt_custom_header () {
+    //Activar logo configurable
+  add_theme_support( 'custom-logo', array (
+    'height' => 100,
+    'width' => 100,
+    'flex-height' => true,
+    'flex-width' => true
+  ) );
+```
+
+```php
+<?php
+function mawt_custom_header () {
+    //Activar logo configurable
+  add_theme_support( 'custom-logo', array (
+    'height' => 100,
+    'width' => 100,
+    'flex-height' => true,
+    'flex-width' => true
+  ) );
+
+  //Activar fondo configurable
+  add_theme_support( 'custom-background', array (
+    'default-color' => 'FFF',
+    'default-image' => get_template_directory_uri() . '/img/background-image.png',
+    'default-repeat' => 'repeat',
+    'default-position-x' => '',
+    'default-position-y' => '',
+    'default-size' => '',
+    'default-attachment' => 'fixed'
+  ) );
+
+  //Activa la actualización selectiva de widgets en el personalizador
+  add_theme_support( 'customize-selective-refresh-widgets' );
+
+  //Activar cabecera configurable
+  //https://developer.wordpress.org/themes/functionality/custom-headers/
+  add_theme_support( 'custom-header', apply_filters( 'mawt_custom_header_args', array (
+    'default-image' => get_template_directory_uri() . '/img/header-image.jpg',
+    'default-text-color' => '0096D9',
+    'width' => 1200,
+    'height' => 720,
+    'flex-width' => true,
+    'flex-height' => true,
+    'video' => true,
+    'wp-head-callback' => 'mawt_custom_header'
+  )) );
+}
+
+add_action( 'after_setup_theme', 'mawt_custom_header' );
+
+function mawt_wp_header_style () {
+  $header_text_color = get_header_textcolor();
+?>
+  <style>
+    .WP-Header-branding { color: #<?php echo esc_attr( $header_text_color ); ?>; }
+  </style>
+<?php } ?>
+
+```
+
+Para que los cambios surtan efecto debemos darle un destino a nuestros cambios. Como estamos modularizando todas las partes de nuestro código vamos a crear dos archivos template; __header-logo.php__ y __header-menu.php__
+
+Por orden;
+
+__header.php__
+
+````html
+    <header class="Header">
+      <section class="Header-container">
+        <?php
+        get_template_part( 'template-parts/header-logo' );
+        get_template_part( 'template-parts/header-menu' );
+        ?>
+      </section>
+    </header>
+````
+
+Dentro de la carpeta template en  __header-logo.php__
+
+```html
+<div class="Logo">
+<?php
+  if ( has_custom_logo()  ):
+    the_custom_logo( );
+  else:
+?>
+    <a href="<?php echo esc_url( home_url( '/' )  );  ?>"><?php bloginfo( 'name' ); ?></a>
+  <?php endif; ?>
+</div>
+```
+
+### 3.3 Fondo configurable y actualización selectiva de widgets
+
+__custom-header.php__ Podemos activar el fondo configurable
+
+````php
+  //Activar fondo configurable
+  add_theme_support( 'custom-background', array (
+    'default-color' => 'FFF',
+    'default-image' => get_template_directory_uri() . '/img/background-image.png',
+    'default-repeat' => 'repeat',
+    'default-position-x' => '',
+    'default-position-y' => '',
+    'default-size' => '',
+    'default-attachment' => 'fixed'
+  ) );
+````
+La actualización selectiva de widgets consiste en activar los __lapicitos__ en especial para los __widgets__ que nos permiten modificar cada campo en donde se encuentre el _lapicito_
+
+```php
+//Activa la actualización selectiva de widgets en el personalizador
+  add_theme_support( 'customize-selective-refresh-widgets' );
+
+```
+
+### 3.4 Cabecera multimedia
+
++ `'default-text-color' => '0096D9',` Color de texto
++ Dimensiones, 'width' => 1200 y 'height' => 720
++ flex para el recorte.
++ 'video' => true, WP permite introducir un pequeño video (mp4) o de youtube.
++ `'wp-head-callback' => 'mawt_custom_header'` Función callback 
+
+Introducimos un estilo dinamico en nuestra cabecera
+
+````html
+function mawt_wp_header_style () {
+  $header_text_color = get_header_textcolor();
+?>
+  <style>
+    .WP-Header-branding { color: #<?php echo esc_attr( $header_text_color ); ?>; }
+  </style>
+<?php } ?>
+````
+
+Nos creamos un archivo __header-custom.php__
+
+````html
+<header class="WP-Header">
+  <?php
+    if ( has_custom_header()  ):
+      the_custom_header_markup();
+    endif;
+  ?>
+  <div class="WP-Header-branding">
+    <h1 class="WP-Header-title">
+      <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+        <?php bloginfo( 'name' ); ?>
+      </a>
+    </h1>
+    <p  class="WP-Header-description">
+      <?php bloginfo( 'description' ); ?>
+    </p>
+  </div>
+</header>
+````
+
+Este archivo lo vamos a invocar en nuestra cabecera __header.php__ al final
+
+````php
+ <?php
+    if ( is_home() || is_front_page() ):
+      get_template_part( 'template-parts/header-custom' );
+    else:
+      get_template_part( 'template-parts/hero-image' );
+    endif;
+  ?>
+    <section class="Content">
+````
+
+
+
+````php
+  //Activar cabecera configurable
+  //https://developer.wordpress.org/themes/functionality/custom-headers/
+  add_theme_support( 'custom-header', apply_filters( 'mawt_custom_header_args', array (
+    'default-image' => get_template_directory_uri() . '/img/header-image.jpg',
+    'default-text-color' => '0096D9',
+    'width' => 1200,
+    'height' => 720,
+    'flex-width' => true,
+    'flex-height' => true,
+    'video' => true,
+    'wp-head-callback' => 'mawt_custom_header'
+  )) );
+}
+
+add_action( 'after_setup_theme', 'mawt_custom_header' );
+````
+
+### 3.5 Customizer, títulos y descripción
+Vamos a activar el archivo __customizer.php__ Vamos a agregar este código en customizer.php para modificar en la vista previa los títulos y la descripción
+
+__customizer.php__
+
++ el hook se llama `add_action( 'customize_register', 'mawt_customize_register' );`
++ la función es `mawt_customize_register($wp_customize)`
++ __$wp_customize__ es una variable de WP
++ `$wp_customize->get_setting( 'blogname' )->transport = 'postMessage';` Aqui le decimos que obtenga el nombre del blog
++ `$wp_customize->get_setting( 'blogdescription' )->transport = 'postMessage';` La descrición
++ `if ( isset( $wp_customize->selective_refresh ) ) {` Si el __selective_refresh__ está activo 
+    + Activamos el __selecte_refresh__ en __custom-header.php__
+    ````php
+      //Activa la actualización selectiva de widgets en el personalizador
+      add_theme_support( 'customize-selective-refresh-widgets' );
+    ````
++ Si está activo __selective_refresh__ recibe un __arreglo__
+
+````php
+ $wp_customize->selective_refresh->add_partial( 'blogname', array(
+      'selector' => '.WP-Header-title',
+      'render_callback' => 'mawt_customize_blogname'
+    ) );
+````
++ __'selector' => '.WP-Header-title'__, Primero le tenemos que decir en que nombre del selector le podemos cambiar el título. 
+    + En este caso solo en `.WP-Header-title` Que lo tenemos en __header-custom.php__
+    ````html
+      <header class="WP-Header">
+        <?php
+          if ( has_custom_header()  ):
+            the_custom_header_markup();
+          endif;
+        ?>
+        <div class="WP-Header-branding">
+          <h1 class="WP-Header-title">
+            <a href="<?php echo esc_url( home_url( '/' ) ); ?>">
+              <?php bloginfo( 'name' ); ?>
+            </a>
+          </h1>
+          <p  class="WP-Header-description">
+            <?php bloginfo( 'description' ); ?>
+          </p>
+        </div>
+      </header>
+    ````
++ __'render_callback' => 'mawt_customize_blogname'__ función callback que se va a ejecutar
++ Lo mismo para la descripción
++ Ambas funciones devuelven título y descripción
+
+````php
+add_action( 'customize_register', 'mawt_customize_register' );
+
+function mawt_customize_blogname () {
+  bloginfo( 'name' );
+}
+
+function mawt_customize_blogdescription () {
+  bloginfo( 'description' );
+}
+````    
+
+
+````php
+<?php
+function mawt_customize_register( $wp_customize ) {
+  $wp_customize->get_setting( 'blogname' )->transport = 'postMessage';
+  $wp_customize->get_setting( 'blogdescription' )->transport = 'postMessage';
+
+  if ( isset( $wp_customize->selective_refresh ) ) {
+    $wp_customize->selective_refresh->add_partial( 'blogname', array(
+      'selector' => '.WP-Header-title',
+      'render_callback' => 'mawt_customize_blogname'
+    ) );
+    $wp_customize->selective_refresh->add_partial( 'blogdescription', array(
+      'selector' => '.WP-Header-description',
+      'render_callback' => 'mawt_customize_blogdescription',
+    ) );
+  }
+}
+
+add_action( 'customize_register', 'mawt_customize_register' );
+
+function mawt_customize_blogname () {
+  bloginfo( 'name' );
+}
+
+function mawt_customize_blogdescription () {
+  bloginfo( 'description' );
+}
+?>
+````
+
