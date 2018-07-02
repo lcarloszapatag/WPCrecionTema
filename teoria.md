@@ -1426,4 +1426,1029 @@ function mawt_customize_blogdescription () {
 }
 ?>
 ````
+### 3.6 Extracto de texto y carga de librerias CSS
 
+__custom-excerpt.php__ módulo __inc__ que vamos a usar para modificar el extracto de texto de nuestro tema
+
+Vamos a cargar dos librerias externas CSS para gestionar el texto de la descripción. 
+
+En __funtions.php__ vamos a definir dos variables globales 
+
+
+
+````php
+global $font_awesome;
+global $hamburgers;
+````
++ __hamburgers CSS__ es una pequeña libreria que nos permite tener botones de hamburgesa animados. [Tasty CSS-animated hamburgers](https://jonsuh.com/hamburgers/)
+
+Si queremos invocar CSS concretos para diferetnes partes de nuestra web lo ideal es declararlas en __variables globales__ y luego invocarlas en las diferentes partes que vayamos a necesitar.
+Inicializamos nuestras variables con las rutas __cdnjs__. Si hubiera cambios solo tendriamos que realizarlos en un único punto de nuestro código.
+
+````php
+$font_awesome = 'https://use.fontawesome.com/releases/v5.0.13/css/all.css';
+$hamburgers = 'https://cdnjs.cloudflare.com/ajax/libs/hamburgers/0.9.3/hamburgers.min.css';
+````
+
+Como lo vamos a usar en nuestro frontend las invocamos dentro de nuestra función;
+
+````php
+function mawt_scripts () {
+    global $google_fonts;
+    global $font_awesome;
+    global $hamburgers;
+````
+
+Y ahora llamamos ambas librerias
+
+````php
+    wp_enqueue_style( 'font-awesome', $font_awesome, array(), '5.0.13', 'all' );
+    wp_enqueue_style( 'hamburgers', $hamburgers, array(), '0.9.3', 'all' );
+````
+
+Y la agregamos como dependencia en nuestra hoja de estilos principal __style.css__
+
+````php
+    wp_enqueue_style( 'style', get_stylesheet_uri(), array('google-fonts', 'font-awesome', 'hamburgers', 'custom-properties'), '1.0.0', 'all' );
+````
+
+__custom-excerpt.php__ Solo imprime 55 palabras por defectos. Vamos a modificar dos cosas:
+
++ Las 55 palabras
++ Los puntos suspensivos del final
+
+__Para modificar los puntos suspensivos del final__
+
++ function mawt_excerpt_more () 
++ Esta función va a retornar un enlace `return '<a href="'. get_permalink() .'">'. __(' leer más...', 'mawt') .'<i class="fab fa-readme"></i></a>';` 
+    + `<a href="'. get_permalink() .'">` permalik que nos lleva al texto
+    +  texto de dominio _leer más__ `__(' leer más...', 'mawt')` 
+    + Luego imprimimos un icono de fontawesonme `'<i class="fab fa-readme"></i>`
+
+__Modificar la longitud del extracto__
+
++ Función `function mawt_excerpt_length ()`
++ El filtro se llama `'excerpt_length'`
++ Solo tenemos que devolver el número de palabras que queremos. 
+
+```php
+function mawt_excerpt_length () {
+  return 40;
+}
+```
+ 
+````php
+function mawt_excerpt_more () {
+  return '<a href="'. get_permalink() .'">'. __(' leer más...', 'mawt') .'<i class="fab fa-readme"></i></a>';
+}
+````
+
+
+
+````php
+<?php
+function mawt_excerpt_more () {
+  return '<a href="'. get_permalink() .'">'. __(' leer más...', 'mawt') .'<i class="fab fa-readme"></i></a>';
+}
+
+add_filter('excerpt_more', 'mawt_excerpt_more');
+
+function mawt_excerpt_length () {
+  return 40;
+}
+
+add_filter('excerpt_length', 'mawt_excerpt_length');
+?>
+````
+
+### 3.7 Descripción personalizada
+
+Archivo __custom-description.php__ dentro de los módulos __inc__ Los __títulos de página__ cambian dinamicamente gracias a la función de WP;
+
+````php
+//Permite que los themes y plugins administren el título, si se activa, no debe usarse wp_title()
+  add_theme_support( 'title-tag' );
+````
+
+Pero la descripción __no__ si no queremos instalar algún plugin de SEO debemos de definir esta funcionalidad como la que vamos a ver a continuación.
+
+__custom-description.php__
+
++ `function mawt_custom_meta_description () ` Esta función no se va añadir a ningún hook o filtro. Solo contiene __conditional-tags__
+    + Si estamos en home o es front_page inicializamos la variable `$description` a la descripción de nuestro blog
+    ````php
+       if ( is_home () || is_front_page() ) {
+            $description = get_bloginfo('description');
+          }
+    ````
++ Cuando sea una busqueda de categorias o etiquetas `else if ( is_category() || is_tag() )` y devuelva `strip_tags( term_description() )` __strip_tags__ devuelve la descripción de las categorias sin código HTML.
++ Cuando se trate de una entrada o una página `( is_single() || is_page() )` obtengo el `htmlentities( get_the_excerpt(), ENT_HTML5, 'UTF-8' );` que es el extracto en formato UTF-8
++ Si estoy en la página del autor `( is_author() )` entonces `$description = get_the_author_meta('description');` la biografía de el. En el dashboard->usuarios-> el cambio biografía.
++ Si estoy en una busqueda `( is_search() )` imprimo el texto `__('Resultados de la búsqueda: ', 'mawt') . get_search_query();` con soporte para idioma y concateno a los terminos de busqueda.
++ Error 404 `( is_404() )` imprimimos `__('Error 404: No Encontrado. ', 'mawt') . get_bloginfo('description');` con soporte para idiomas y concateno con descripción del sitio.
++ Y para el resto imprimimos la descripción del blog `get_bloginfo('description');`
+
+````php
+<?php
+
+  function mawt_custom_meta_description () {
+    if ( is_home () || is_front_page() ) {
+      $description = get_bloginfo('description');
+    } else if ( is_category() || is_tag() ) {
+      $description = strip_tags( term_description() );
+    } else if ( is_single() || is_page() ) {
+      the_post();
+      $description = htmlentities( get_the_excerpt(), ENT_HTML5, 'UTF-8' );
+      rewind_posts();
+    } else if ( is_author() ) {
+      $description = get_the_author_meta('description');
+    } else if ( is_search() ) {
+      $description = __('Resultados de la búsqueda: ', 'mawt') . get_search_query();
+    } else if ( is_404() ) {
+      $description = __('Error 404: No Encontrado. ', 'mawt') . get_bloginfo('description');
+    } else {
+      $description = get_bloginfo('description');
+    }
+
+    echo $description;
+  }
+
+?>
+````
+
+Ahora tenemos que hacer que nuestra función `mawt_custom_meta_description ()` Se ejecute en nuestra etiqueta meta dentro de la cabecera maestra __header.php__
+`<meta name="description" content="<?php mawt_custom_meta_description(); ?>">`
+
+__header.php__
+
+````html
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+  <meta charset="<?php bloginfo( 'charset' ); ?>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="description" content="<?php mawt_custom_meta_description(); ?>">
+````
+
+### 3.8 Configurando página de inicio (Página de login)
+
+Para configurar nuestra página de login lo primero que tenemos que hacer es crear una función que cargue los __scripts__ que van a actuar en nuestro _login_
+En __functions.php__ definimos nuestro módulo llamado __custom-login.php__
+
+__custom-login.php__ [Customizing the Login Form](https://codex.wordpress.org/Customizing_the_Login_Form)
+
+Registramos nuestros script CSS y JS en `function mawt_login_scripts ()`
+
++ custom_properties.css __no lo vamos a trabajar con SASS__ sass solo lo dejamos para style.css que es nuestro punto de entrada en el front-end
++ login_page.css lo mismo que custom_properties.css __no se trabaja con sass__
+
+Y los JS
+
++ jquery
++ login-page-js
+
+Con esta función le decimos que el logo del sitio redireccione a la página inicial de nuestro sitio.
+````php
+function mawt_login_logo_url () {
+  return home_url();
+}
+````
+
+Con esta función al poner el ratón sobre el logo nos muestra la descripción de nuestro sitio web
+
+````php
+function mawt_login_logo_url_title() {
+  return get_bloginfo( 'title' ) . ' | ' .  get_bloginfo( 'description' );
+}
+````
+
+
+````php
+<?php
+//https://codex.wordpress.org/Customizing_the_Login_Form
+function mawt_login_scripts () {
+  wp_enqueue_style( 'custom-properties', get_stylesheet_directory_uri() . '/css/custom_properties.css', array(), '1.0.0', 'all' );
+  wp_enqueue_style( 'login-page-css', get_template_directory_uri() . '/css/login_page.css', array('custom-properties'), '1.0.0', 'all' );
+
+  wp_enqueue_script( 'jquery' );
+  wp_enqueue_script( 'login-page-js', get_template_directory_uri() . '/js/login_page.js', array('jquery'), '1.0.0', true );
+}
+
+add_action( 'login_enqueue_scripts', 'mawt_login_scripts' );
+
+function mawt_login_logo_url () {
+  return home_url();
+}
+
+add_filter( 'login_headerurl', 'mawt_login_logo_url' );
+
+function mawt_login_logo_url_title() {
+  return get_bloginfo( 'title' ) . ' | ' .  get_bloginfo( 'description' );
+}
+
+add_filter( 'login_headertitle', 'mawt_login_logo_url_title' );
+?>
+````
+
+Las hojas de estilo CSS las tenemos que cargar tambien como dependencias de nuestra hoja de estilos principal.
+
+__functions.php__
+
+Dentro de `function mawt_scripts ()`
+
+````php
+    wp_enqueue_style( 'custom-properties', get_template_directory_uri() . '/css/custom_properties.css', array('google-fonts'), '1.0.0', 'all' );
+    wp_enqueue_style( 'style', get_stylesheet_uri(), array('google-fonts', 'font-awesome', 'hamburgers', 'custom-properties'), '1.0.0', 'all' );
+````
+
+### 3.9 Custom admin
+
+__custom-admin.php__ como __inc__ de _functions.php_ Vamos a customizar la fuente que vemos en las entradas de nuestro blog y que sea la misma en el editor del visual del dashboard.
+
++ `global $google_fonts;` Llamamos a nuestra variable global y este es un ejemplo muy bueno de porqué usamos variables globales. Si quisieramos cambiar de fuente solo lo tendriamos que hacer en un punto del código.
++  `add_editor_style( $google_fonts );`, Para el administrador.
++  `add_editor_style( 'css/custom_properties.css' );`, Variables CSS.
++  `add_editor_style( 'css/custom_editor_style.css' );`, Hoja de estilo definitiva.
+
+````php
+<?php
+//https://codex.wordpress.org/Dashboard_Widgets_API
+//https://codex.wordpress.org/Plugin_API/Admin_Screen_Reference
+//https://codex.wordpress.org/Administration_Screens
+//https://codex.wordpress.org/Adding_Administration_Menus
+
+function mawt_add_editor_styles () {
+  global $google_fonts;
+  add_editor_style( $google_fonts );
+  add_editor_style( 'css/custom_properties.css' );
+  add_editor_style( 'css/custom_editor_style.css' );
+}
+
+add_action( 'admin_init', 'mawt_add_editor_styles' );
+
+function mawt_user_contactmethods ($data_user) {
+  $data_user['facebook']=__('Facebook', 'mawt');
+  $data_user['twitter']=__('Twitter', 'mawt');
+
+  return $data_user;
+}
+
+add_filter( 'user_contactmethods', 'mawt_user_contactmethods' );
+?>
+````
+
+## 4. Maquetación y programación
+
+## 4.1 Creando archivos finales
+
+__SASS__
+
+La ventaja que nos brinda sass es que podemos modularizar nuestra maquetación y luego ser compiladas en un único archivo principal de estilos. En este caso __style.scss__.
+Los módulos que vamos a crear son;
+
++ _author.scss
++ _footer.scss
++ _grid_layout.scss
++ _header.scss.scss
++ ...etc es decir, todas aquellas partes que sean supceptibles de ser modulares.
+
+Cuando usamos selectores recomendados por WP usamos una hoja __de estilo normal__, no scss.
+
+__JS__
+
++ index.js
++ login_page.js, para controlar el login
++ toogle_nav.js, menu de navegación como módulo de js6
+
+
+## 4.2 Preparando nuestro template
+
+Lo primero que vamos a revisar nuestro contenido de plantillas.
+
+La primera plantilla que llamamos es __content.php__ y vamos comprobando las plantillas que llama a su vez __content.php__.
+En este proceso de desarrollo vamos a ir _empaquetando_ y comprobando las plantillas y los partes que encapsulamos en plantillas.
+
+Una vez comprobado. Vamos a __importar los estilos dentro de style.scss__.
+
+Es muy importante que las importanciones __guarden el orden en le que se las va a invocar__
+
+````scss
+/*!
+ Theme Name: My Awesome WP Theme
+Theme URI: https://jonmircha.com/mawt/
+Author: Jonathan MirCha
+Author URI: https://jonmircha.com/
+Description: Una breve descripción de las características que tu tema ofrece a nivel de diseño, programación y personalización. Escríbela en inglés.
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Tags: one-column, two-columns, right-sidebar, left-sidebar, full-width, flexible-header, accessibility-ready, custom-colors, custom-header, custom-menu, custom-logo, editor-style, featured-images, footer-widgets, post-formats, theme-options, translation-ready
+Text Domain: mawt
+*/
+
+@import 'reset';
+@import 'header';
+@import 'menu';
+@import 'grid_layout';
+@import 'footer';
+@import 'widgets';
+@import 'search_form';
+@import 'social_menu';
+@import 'post';
+@import 'pagination';
+@import 'comments.css';
+@import 'not_found';
+@import 'author';
+@import 'wp_custom_header';
+@import 'hero_image';
+
+````
+
+__variables en el custom_properties.css__
+
+Las custom_properties esta definida como una hoja que carga WP y por eso no tiene sentido invocarla en le archivo sass. Tiene que ser así para que WP la reconozca nada más cargue WP.
+
+````css
+/* ********** Custom Properties ********** */
+:root {
+  --main-font: 'Raleway';
+  --alternate-font: sans-serif;
+  --font-size: 16px;
+  --line-height: 1.6;
+
+  --main-color: #0096D9;
+  --main-modal-color: rgba(0, 150, 217, .75);
+  --second-color: #171226;
+  --second-modal-color: rgba(23, 18, 38, .75);
+
+  --bg-color: #FFF;
+  --bg-modal-color: rgba(0, 0, 0, .5);
+  --bg-alternate-color: #F3F3F3;
+  --border-color: #DDD;
+
+  --text-color: #333;
+  --title-color: var(--second-color);
+
+  --link-color: var(--main-color);
+  --link-hover-color: var(--second-color);
+
+  --container-width: 1200px;
+  --header-height: 4rem;
+}
+````
+
+### 4.4 Definiendo contenidos finales I
+
+__content-single.php__
+
++ `<?php _e('Formato de Entrada: ', 'mawt'); echo ( get_post_format( $post ) ) ? get_post_format( $post ) : 'standard'; ?>` Obtenemos el formato de la entrada, evaluamos si el postformat parte verdadera imprimo el tipo de formato y si no imprimimos la palabra _standard_.
+Es decir, dependiendo del tipo de formato de entrada, este lo va a imprimir en la entrada, video, galeria de imagenes...etc.
++ `get_post_format( $post )` devuelve _cadena vacia_ cuando es un formato __estandar__
++ Por medio de la función __get_post_format( $post )__ podemos definir el formato según el tipo de post
+
+````html
+<p>
+  <small>
+    <i class="fas fa-calendar"></i>
+    <?php the_time( get_option('date_format') ); ?>
+    &bull;
+    <i class="fas fa-user-circle"></i>
+    <?php the_author_posts_link(); ?>
+  </small>
+</p>
+<p>
+  <i class="fas fa-tags"></i>
+  <?php _e('Categorías: ', 'mawt'); the_category(', '); ?>
+</p>
+<p>
+  <i class="fas fa-hashtag"></i>
+  <?php the_tags(); ?>
+</p>
+<p>
+  <i class="fab fa-wpforms"></i>
+  <?php _e('Formato de Entrada: ', 'mawt'); echo ( get_post_format( $post ) ) ? get_post_format( $post ) : 'standard'; ?>
+</p>
+````
+
+### 4.5 Definiendo contenidos finales II
+
+__content-search.php__
+
++ Entre etiquetas _figure_ pues vamos a mostrar una busqueda con la imagen destacada del post.
+
+````html
+<figure class="PostCard">
+  <?php the_post_thumbnail(); ?>
+  <figcaption>
+    <h2>
+      <a href="<?php the_permalink(); ?>"><?php the_title(); ?></a>
+    </h2>
+    <?php the_excerpt(); ?>
+  </figcaption>
+</figure>
+````
+
+__archive.php__
+
+Para busqueda de categorias y/o etiquetas.
+
+````html
+<?php get_header(); ?>
+<div class="Content-container">
+  <main class="Main">
+    <?php
+      if ( is_category() ):
+        $term_title = __('Resultados para la categoría:', 'mawt');
+      endif;
+
+      if ( is_tag() ):
+        $term_title = __('Resultados para la etiqueta:', 'mawt');
+      endif;
+    ?>
+    <div class="TermsResults">
+      <h3><?php echo $term_title; ?></h3>
+      <mark><?php single_term_title(); ?></mark>
+    <div>
+    <?php
+      if ( have_posts() ): while ( have_posts() ): the_post();
+        get_template_part( 'template-parts/content-main' );
+      endwhile; else:
+        get_template_part( 'template-parts/content-none' );
+      endif;
+    ?>
+  </main>
+  <?php
+    get_template_part( 'template-parts/pagination' );
+    get_sidebar();
+  ?>
+</div>
+<?php get_footer(); ?>
+````
+
++ template-part que va a cargar una _hero image_ del post. Para ello tenemos que hacer una validación en __header.php__
+
+Hacemos una validación en __header.php__
+
++ si es home o front page carga header-custom `get_template_part( 'template-parts/header-custom' );
++ Para todo lo demás `get_template_part( 'template-parts/hero-image' );`
+
+````php
+<?php
+    if ( is_home() || is_front_page() ):
+      get_template_part( 'template-parts/header-custom' );
+    else:
+      get_template_part( 'template-parts/hero-image' );
+    endif;
+  ?>
+````
+
+__header.php__
+
+````html
+<!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+  <meta charset="<?php bloginfo( 'charset' ); ?>">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="description" content="<?php mawt_custom_meta_description(); ?>">
+  <?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+    <header class="Header">
+      <section class="Header-container">
+        <?php
+        get_template_part( 'template-parts/header-logo' );
+        get_template_part( 'template-parts/header-menu' );
+        ?>
+      </section>
+    </header>
+    <?php
+    if ( is_home() || is_front_page() ):
+      get_template_part( 'template-parts/header-custom' );
+    else:
+      get_template_part( 'template-parts/hero-image' );
+    endif;
+  ?>
+    <section class="Content">
+````
+
+__hero-image.php__
+
+Vamos a tener una cabecera html. 
+Las __variables CSS se pueden pasar por medio del atributo html style__. Le vamos a pasar:
++ `--bg-url: url(<?php echo $hero_image; ?>);` Con el valor de la imagen destacada.
++ `--bg-attach: fixed;` propiedad CSS
++ ` --bg-size: cover; --bg-x: center; --bg-y: center;` conver y centrado X e Y.
+
+````html
+<header class="HeroImage" style="
+      --bg-url: url(<?php echo $hero_image; ?>);
+      --bg-attach: fixed;
+      --bg-size: cover;
+      --bg-x: center;
+      --bg-y: center;
+    ">
+````
++ Luego imprimimos la variable __$título__ y __$subtítulo__.
+
+````html
+  <div>
+    <h1><?php echo $title; ?></h1>
+    <p><?php echo $subtitle; ?></p>
+  </div>
+````
+
+¿De dónde sacamos las variables __$titulo $subtitulo y $hero_image__?
+
++ `is_single()` Si es una entrada
++ `is_page()` Si es una página
++ ...etc
+
+Luego imprimimos las variables según cada caso.
+
+````php
+
+<?php
+if ( is_single() ):
+  $title = get_the_title();
+  $subtitle = get_avatar( get_the_author_id(), 100) . get_the_author();
+  $hero_image = get_the_post_thumbnail_url();
+elseif ( is_page() ):
+  $title = get_the_title();
+  $subtitle = null;
+  $hero_image = get_the_post_thumbnail_url();
+elseif ( is_category() ):
+  /* var_dump(get_the_category()); */
+  $current_cat = get_the_category();
+  $title =  single_cat_title('', false);
+  $subtitle = category_description( $current_cat[0] );
+  $hero_image = get_header_image();
+elseif ( is_tag() ):
+  $current_tag = get_the_tags();
+  $title =  single_cat_title('', false);
+  $subtitle = tag_description( $current_tag[0] );
+  $hero_image = get_header_image();
+elseif ( is_author() ):
+  $title =  get_the_author_meta('first_name') . ' ' . get_the_author_meta('last_name');
+  $subtitle = get_the_author_posts() . ' publicaciones';
+  $hero_image = get_avatar_url( get_the_author_id() );
+elseif ( is_search() ):
+  $title = get_search_query();
+  $subtitle = __('Resultados de búsqueda', 'mawt');
+  $hero_image = get_header_image();
+elseif ( is_404() ):
+  $title = __('Contenido No Encontrado', 'mawt');
+  $subtitle = __('Error 404', 'mawt');
+  $hero_image = get_header_image();
+else:
+  $title = get_bloginfo('name');
+  $subtitle = get_bloginfo('description');
+  $hero_image = get_header_image();
+endif;
+?>
+
+
+<header class="HeroImage" style="
+      --bg-url: url(<?php echo $hero_image; ?>);
+      --bg-attach: fixed;
+      --bg-size: cover;
+      --bg-x: center;
+      --bg-y: center;
+    ">
+  <div>
+    <h1><?php echo $title; ?></h1>
+    <p><?php echo $subtitle; ?></p>
+  </div>
+</header>
+
+````
+
+### 4.6 Definiendo contenidos finales III
+
+Para modificar el formulario de busqueda por defecto de WP. Buscamos el archivo, que tiene que estar en la raiz. Creamos el archivo __searchform.php__
+
+__searchform.php__
+
+[Referencia SearchForm](https://developer.wordpress.org/reference/functions/get_search_form/)
+
+````html
+<?php //https://developer.wordpress.org/reference/functions/get_search_form/ ?>
+<form role="search" method="get" class="Search" action="<?php echo home_url( '/' ); ?>">
+  <input type="search" id="s" placeholder="<?php echo esc_attr_x( 'Buscar …', 'mawt' ) ?>" value="<?php echo get_search_query() ?>" name="s" title="<?php echo esc_attr_x( 'Buscar:', 'mawt' ) ?>">
+  <label for="s">
+    <i class="fas fa-search"></i>
+    <span class="screen-reader-text"><?php echo _x( 'Buscar:', 'mawt' ) ?></span>
+  </label>
+  <input type="submit" value="<?php echo esc_attr_x( 'Buscar', 'mawt' ) ?>">
+</form>
+````
+
+__search.php__
+
+````html
+<?php get_header(); ?>
+<div class="Content-container">
+  <main class="Main">
+    <div class="Search-results">
+      <h3><?php  _e( 'Resultados para la búsqueda:', 'mawt' ); ?></h3>
+      <mark><?php echo get_search_query(); ?></mark>
+    </div>
+    <?php
+      if ( have_posts() ): while ( have_posts() ): the_post();
+        get_template_part( 'template-parts/content-search' );
+      endwhile; else:
+        get_template_part( 'template-parts/content-none' );
+      endif;
+    ?>
+  </main>
+  <?php
+    get_template_part( 'template-parts/pagination' );
+    get_sidebar();
+  ?>
+</div>
+<?php get_footer(); ?>
+````
+### 4.7 Estilos de cabecera
+
+__header.scss__
+
++ contenedor del header
+
+````scss
+.Header {
+  //Cabecera fija
+  position: fixed;
+  top: 0;
+  left: 0;
+  //z-index alto para que quede arriba
+  z-index: 999;
+  //Anchura 100%
+  width: 100%;
+  height: var(--header-height);
+  line-height: var(--header-height);
+  //color de fondo
+  background-color: var(--second-color);
+
+  //Contenedor Header-container
+  &-container {
+    //Posición relativa
+    //La posición es relativa porque el LOGO y el Panel van a ir posicionados de manera absoluta
+    position: relative;
+    //Centrado
+    margin: 0 auto;
+    //Variable de máxima anchura
+    max-width: var(--container-width);
+  }
+}
+````
+
++ logo 
+
+Nos encontramos la clase _.Logo_ en __header-logo.php__
+
+````scss
+.Logo {
+  position: absolute;
+  z-index: 999;
+
+  & a {
+    font-size: 2rem;
+    //Quitamos la decoración del texto
+    text-decoration: none;
+    color: var(--main-color);
+    transition: all .3s ease;
+
+    &:hover { opacity: .75; }
+  }
+  //Si el logo es una imagen
+  & img {
+    //margen para que no se pegue a la cabecera
+    padding: .25rem;
+    //Le damos un ancho automático
+    width: auto;
+    //Altura igual que la cabecera
+    height: var(--header-height);
+  }
+}
+````
+
++ El menú principal lo vamos a cambiar por un boton de _hamburguesa_
+
+__header-menu.php__
+
+````html
+<span class="hamburger-box">
+            <span class="hamburger-inner"></span>
+</span>
+````
+
+__header-menu.php__
+
+Clase _.is-active_ Cuando Panel posee esa clase el panel vuelve a su lugar de origen. 
+__¿Como la añadimos y la quitamos?__ Mediante un código JS
+
+````javascript
+const toggleNav = () => {
+  //Guardamos el documento en D
+  const d = document,
+    //buscamos el elemento .Panel
+    panel = d.querySelector('.Panel'),
+    //y el elemento .Panel-btn
+    panelBtn = d.querySelector('.Panel-btn')
+  //Al click del boton
+  panelBtn.addEventListener('click', e => {
+    e.preventDefault()
+    //Le añadimos/quitamos (es lo que hace toggle) la clase .is-active
+    //Tanto a panelBtn como a Panel
+    panelBtn.classList.toggle('is-active')
+    panel.classList.toggle('is-active')
+  })
+}
+
+// Exportamos la función toggleNav
+export default toggleNav
+````
+
+Por último en __index.js__
+
+```javascript
+import toggleNav from './toggle_nav'
+toggleNav()
+```
+
+La clase _.is-active_ también le sirve al menu de la hamburguesa para crear la animación.
+
+`````scss
+.Panel {
+  position: fixed;
+  //z-index menor a la cabecera
+  z-index: 998;
+  //Le ponemos los cuatro lados a 0 para que se estire
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  overflow-y: auto;
+  background-color: var(--second-modal-color);
+  
+  //Estas transformaciones sirve para las versiones móviles. Ver desde que lado se visualiza el menu
+  // Estas transformaciones son ejemplos ahora solo se ejecuta la última
+  transition: transform .3s ease;
+  /* De arriba */
+  transform: translate(0, -100%);
+  /* De abajo */
+  transform: translate(0, 100%);
+  /* De la izquierda */
+  transform: translate(-100%, 0);
+  /* De la derecha */
+  transform: translate(100%, 0);
+
+  // Cuando el Panel tenga una clase que se llame .is-active devolvemos el panel al origen a 0,0
+  // Pero ¿Cómo agregamos y quitamos esa clase?
+  &.is-active { transform: translate(0, 0); }
+
+  &-btn {
+    position: absolute;
+    z-index: 999;
+    top: -.5rem;
+    right: 0;
+  }
+}
+
+//Quitamos el focus de la hamburguesa
+.hamburger {
+  &:focus {
+    outline: 0;
+    border: 0;
+  }
+//Elementos de la hamburguesa como el color
+  &-inner,
+  &-inner:after,
+  &-inner:before { background-color: var(--main-color);  }
+}
+`````
+
+Esto ha sido la versión movil (mobil firts) Ahora vamos a la versión de escritorio.
+
+`````scss
+@media screen and (min-width: 64em) {
+  //Flex -- ambos estarán en fila
+  .Header-container { display: flex; }
+
+  .Logo {
+    position: static;
+    width: 10%;
+  }
+
+  .Panel {
+    position: static;
+    width: 90%;
+    display: flex;
+    overflow-y: visible;
+    background-color: transparent;
+    //No necesitamos que se salga en la version desktoc
+    transform: translate(0, 0);
+
+    &-btn { display: none; }
+  }
+}
+
+`````
+
+## 4.8 Estilos al menu y footer
+
+Primero version movil
+
+````scss
+.Menu {
+  margin: 0  auto;
+  //Igual al tamaño de la cabecera. En esta version el primer elemento del menu esta a la altura del logo. Por eso le damos ese padding-top con la misma altura que la cabecera. 
+  padding-top: var(--header-height);
+  //Centramos todos los elementos
+  text-align: center;
+  //Ul es flex pero en columna y le quitamos el estilo de lista
+  & ul {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+  }
+
+  & li { margin-left: 0; }
+
+  & a {
+    display: block;
+    font-size: 1.5rem;
+    text-decoration: none;
+    color: var(--main-color);
+    transition: all .3s ease;
+
+    & a:hover {
+      font-weight: bold;
+      color: var(--bg-color);
+      background-color: var(--main-color);
+    }
+  }
+  
+  
+  //Version Desktoc
+
+  @media screen and (min-width: 64em) {
+    padding-top: 0;
+    width: 100%;
+    
+    
+    //Ahora le damos orientaion en fila y se repartan en space-evenly los list-items
+    & ul:not(.sub-menu) {
+      flex-direction: row;
+      justify-content: space-evenly;
+    }
+
+    & a {
+      padding: 0 .5rem;
+      font-size: 1.5rem;
+      border-top: medium solid transparent;
+
+      &:hover {
+        border-top: medium solid var(--bg-color);
+        color: var(--bg-color);
+        background-color: transparent;
+      }
+    }
+  }
+}
+````
+
+__submenu__
+
+En versión movil le damos un tamaño a los enlaces que se encuentren en el submenu
+
+````scss
+/* WordPress Submenu Classes */
+.sub-menu a { font-size: .85rem; }
+````
+
+En la versión extendida. Para que este inmediatamente debajo de su padre le aplicamos un posicionamiento __absoluto__
+
+`````scss
+@media screen and (min-width: 64em) {
+  .sub-menu {
+    position: absolute;
+    top: var(--header-height);
+    transition: all .3s ease-out;
+    background-color: var(--second-modal-color);
+    //Jugamos con la opacidad. Por defecto es 0 y no se puede ver pero...
+    opacity: 0;
+    visibility: hidden;
+
+    & a {
+      padding: 0 1rem;
+      font-size: .85rem;
+      text-align: left;
+      border-top: medium solid transparent;
+    }
+  }
+
+  .menu-item-has-children {
+    position: relative;
+
+    //... cuando hacemos hover de un elemento que sea sub-menu opacidad a 1 y se pueda ver.
+    &:hover > .sub-menu {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+}
+`````
+
+__footer.scss__
+
+`````scss
+.Footer {
+  //Color de fondo
+  background-color: var(--bg-alternate-color);
+
+  //Mismas características que el contendor de header
+  &-container {
+    margin: 0 auto;
+    padding: 1rem;
+    //Dimensiones
+    max-width: var(--container-width);
+    min-height: var(--header-height);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+
+    & > div { width: 100%; }
+    //Versión Desktoc
+    @media screen and (min-width: 64em) {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      
+      & > div {
+        width: 50%;
+        //Ultimo div en el footer es el copy lo invierte y lo deja a la izquierda (flex)
+        &:last-child { order: -1; }
+      }
+    }
+  }
+}
+`````
+
+## 4.9 Grid layout y widgets
+
+El contenido principal y el contenido que tenemos en el lado.
+Mobil Firts primero.
+
+__grid_layout.scss__
+
+````scss
+.Content-container {
+  margin: 0 auto;
+  max-width: var(--container-width);
+  display: grid;
+  grid-template-columns: 100%;
+  grid-template-rows: repeat(3, auto);
+  //Tres areas main-para el contenido principal, features-para los comentarios y sidebar para el contenido lateral. 
+  grid-template-areas: 'main'
+                                    'features'
+                                    'sidebar';
+  grid-gap: 1rem;
+}
+
+//Definición de las áreas que hemos definido en Content-container
+//Grid area - main
+.Main { grid-area: main; }
+//Grid area - sidebar
+.Sidebar { grid-area: sidebar; }
+//Paginacion y comentarios - features
+.Pagination,
+.Comments {
+  grid-area: features;
+  padding: 1rem;
+  border: thin solid var(--border-color);
+  background-color: var(--bg-alternate-color);
+}
+
+
+````
+
+Versión extendida
+
+`````scss
+@media screen and (min-width: 64em) {
+  .Content-container {
+    margin: 1rem auto;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: repeat(2, auto);
+    //Le vamos a decir que sidebar ocupe la segunda columna y el main la primera celda de la primera columna y features (paginacion y comentarios) la segunda.  
+    grid-template-areas: 'main sidebar'
+                                      'features sidebar';
+  }
+}
+`````
